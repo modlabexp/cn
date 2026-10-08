@@ -1,35 +1,48 @@
 import socket
+import threading
 
-ch=int(input("1.TCP  2.UDP\nChoice: "))
+HOST = "127.0.0.1"
+TCP_PORT = 5000
+UDP_PORT = 5001
 
-if ch==1:
-    s=socket.socket()
-    s.bind(("127.0.0.1",5000))
+# TCP Server
+def tcp_server():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((HOST, TCP_PORT))
     s.listen(1)
 
-    print("Waiting for connection...")
-    c,a=s.accept()
-    print("Connected")
+    print("TCP Server waiting...")
+    conn, addr = s.accept()
+    print("TCP Client connected")
 
-    msg=c.recv(1024).decode()
-    print("Client:",msg)
+    while True:
+        msg = conn.recv(1024).decode()
+        if not msg:
+            break
+        print("TCP Client:", msg)
 
-    c.send(input("Server: ").encode())
-    c.close()
-    s.close()
+        reply = input("TCP Server: ")
+        conn.send(reply.encode())
 
-else:
-    s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    conn.close()
 
-    myport=int(input("Enter your port: "))
-    peerport=int(input("Enter peer port: "))
 
-    s.bind(("127.0.0.1",myport))
+# UDP Server
+def udp_server():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.bind((HOST, UDP_PORT))
 
-    msg=input("You: ")
-    s.sendto(msg.encode(),("127.0.0.1",peerport))
+    print("UDP Server waiting...")
 
-    data,addr=s.recvfrom(1024)
-    print("Peer:",data.decode())
+    while True:
+        msg, addr = s.recvfrom(1024)
+        print("UDP Client:", msg.decode())
 
-    s.close()
+        reply = input("UDP Server: ")
+        s.sendto(reply.encode(), addr)
+
+
+threading.Thread(target=tcp_server, daemon=True).start()
+threading.Thread(target=udp_server, daemon=True).start()
+
+input("Server running. Press Enter to stop...")
